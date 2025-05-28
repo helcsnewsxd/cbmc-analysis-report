@@ -1,3 +1,8 @@
+> [!note]
+> This repository contains a technical report on CBMC (C Bounded Model Checker), developed as part of the Software Engineering II course of the Computer Science degree at FAMAF – Universidad Nacional de Córdoba.
+>
+> All content is in Spanish, as it was written for academic use and submission.
+
 # Informe sobre CBMC (Bounded Model Checker para programas C y C++)
 
 El presente repositorio contiene toda la información correspondiente el informe realizado sobre [CBMC](https://www.cprover.org/cbmc/) para la materia _Ingeniería del Software II_ correspondiente a 5to año de la Licenciatura en Ciencias de la Computación de FAMAF durante el año 2025.
