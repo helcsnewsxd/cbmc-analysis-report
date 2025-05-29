@@ -134,7 +134,7 @@ El procedimiento de decisión que se requiere debe poder manejar lógica de vect
 Además, se sugiere usar un solucionador incremental SAT para reducir la complejidad de la fórmula a verificar, de modo que se añadan primero las partes fáciles de la fórmula y las complejas solo cuando sea necesario.
 
 \section{Aplicaciones y casos de estudio}
-CBMC es herramienta versátil y que provee una funcionalidad de verificación que permite ser utilizada tanto en el sector académico como en el industrial, e incluso en el competitivo (como se podrá a continuación en nuestro caso de estudio presentado).
+CBMC es herramienta versátil y que provee una funcionalidad de verificación que permite ser utilizada tanto en el sector académico como en el industrial, e incluso en el competitivo (como se podrá ver a continuación en nuestro caso de estudio presentado).
 Además, el sector o área de estudio en el que se utiliza es de lo más diverso incluyendo sectores como verificación de programas concurrentes \cite{cbmc-concurrent}, hardware \cite{cbmc-hardware-case}, sistemas operativos \cite{cbmc-tinyos-case}, implementación de drivers \cite{cbmc-drivers-case} e incluso de librerías de criptografía \cite{cbmc-ecc-case,cbmc-prng-case}; corroboración de equivalencia entre programas (o una simulación con un modelo) \cite{cbmc-equiv-code-generators-case,cbmc-equiv-stateflow-case}, análisis de sistemas físicos y de control \cite{cbmc-vehicles-case}, generación automática de vectores de prueba \cite{cbmc-testing-case1,cbmc-testing-case2}, cálculo del tiempo de ejecución en el peor caso (WCET) \cite{cbmc-wcet-case}, entre otros.
 Un curioso sector en el que también fue aplicado, es en biología para el estudio de restricciones del tráfico de vesículas en células eucariotas \cite{cbmc-biology-case}.
 
@@ -185,7 +185,7 @@ En comparación con CBMC y CPA-Seq, ESBMC-incr encuentra $949$ errores \cite{cbm
 \section{Conclusión}
 Como hemos visto, CBMC se presenta como una herramienta de verificación formal sólida y muy versátil.
 Su enfoque basado en Bounded Model Checking y las transformaciones que aplica para traducir código a su representación lógica para luego aplicar SAT/SMT solvers, la convierte en una herramienta eficaz para la detección de errores comunes.
-Además, como vimos, CBMC no solo permite verificar propiedades estándares de seguridad, también permite que el usuario pueda definir aserciones personalizadas que considere relevantes para el software específico que se este analizando, lo cual amplía significativamente su aplicación.
+Además, como vimos, CBMC no solo permite verificar propiedades estándares de seguridad, también permite que el usuario pueda definir aserciones personalizadas que considere relevantes para el software específico que se esté analizando, lo cual amplía significativamente su aplicación.
 
 Cabe destacar también su facilidad de uso desde la línea de comandos: las flags son directas y permiten configurar rápidamente distintos modos de análisis.
 No es necesario descargar herramientas extras para su uso, y hasta viene ya instalado en Linux, por lo que es fácil de acceder a la misma (en caso de Windows, su instalación es muy simple).
