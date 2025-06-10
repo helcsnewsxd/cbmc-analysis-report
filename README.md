@@ -17,4 +17,4 @@ El equipo encargado del presente informe está conformado por:
 
 ## Contenidos
 
-Aquí se podrá encontrar el informe correspondiente a CBMC con explicaciones respecto a su origen, objetivo, aplicaciones y funcionamiento (tanto técnico como por parte del usuario), más un caso de uso creado por nosotros que consta de solucionar un challenge de criptografía de un CTF (_XtraORdinary_ del CTF picoMini). Más información respecto a la herramienta la podrá encontrar en el [informe](./report.pdf), y sobre el caso de uso [aquí](./use_case/README.md).
+Aquí se podrá encontrar el informe correspondiente a CBMC con explicaciones respecto a su origen, objetivo, aplicaciones y funcionamiento (tanto técnico como por parte del usuario), más un caso de uso creado por nosotros que consta de solucionar un challenge de criptografía de un CTF (_XtraORdinary_ del CTF picoMini). Más información respecto a la herramienta la podrá encontrar en el [informe](./report.pdf), y sobre el caso de uso [aquí](./use_case/README.md). Además, se incluye la [presentación](./presentation.pdf) correspondiente al trabajo.
