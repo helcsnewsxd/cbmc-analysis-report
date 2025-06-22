@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{wrapfig}
 
 \graphicspath{ {./img/} }
 
@@ -37,7 +38,7 @@
   CBMC (C Bounded Model Checker) is a formal verification tool for detecting bugs in C and C++ programs using bounded model checking.
   This report explores its internal mechanisms, verification features, and command-line usage. 
   Through a case study from a Capture The Flag (CTF) cryptographic challenge, we demonstrate how CBMC can model and break a custom XOR cipher.
-  We also compare it with tools like CPA-Seq and ESBMC-incr.
+  We also compare it with tools like CPA-Seq and ESBMC-incr, and discuss some of its limitations.
   Our main contribution is the integration of CBMC’s symbolic analysis with practical cryptographic vulnerability modeling.
 
   \keywords{CBMC \and Formal Verification \and Bounded Model Checking \and Symbolic Execution \and Cryptographic Analysis \and SAT/SMT Solving}
@@ -48,7 +49,7 @@
   CBMC (C Bounded Model Checker) es una herramienta de verificación formal para detectar errores en programas C y C++ mediante técnicas de verificación acotada.
   Este informe analiza sus mecanismos internos, capacidades de verificación y uso por línea de comandos.
   A través de un estudio de caso basado en un desafío criptográfico de una competencia CTF, mostramos cómo CBMC puede modelar y romper un cifrado XOR personalizado.
-  También lo comparamos con herramientas como CPA-Seq y ESBMC-incr.
+  También lo comparamos con herramientas como CPA-Seq y ESBMC-incr, y describimos algunas de sus limitaciones.
   Nuestra principal contribución es la integración del análisis simbólico de CBMC con la modelización práctica de vulnerabilidades criptográficas.
 \end{abstract}
 
@@ -71,17 +72,18 @@ La intención es poder destacar la utilidad práctica de la herramienta y su rol
 La sección 2 introduce la herramienta junto con su contexto histórico.
 La sección 3 describe su uso desde la línea de comandos y la sección 4 detalla su funcionamiento interno.
 La sección 5 presenta aplicaciones relevantes en distintos dominios y un caso de estudio específico de criptoanálisis.
-Luego, en la sección 6 se detallan comparaciones con otras herramientas similares y finalmente en la sección 7 se exponen las conclusiones.
+Luego, en la sección 6 se detallan comparaciones con otras herramientas similares y en la sección 7 se discuten las limitaciones encontradas sobre CBMC.
+Finalmente, la sección 8 concluye el informe y resume los puntos más importantes tratados.
 
 %
 \section{Fundamentos y Origen}
-CBMC forma parte de la familia de herramientas CPROVER destinadas al análisis y verificación automática de software \cite{cbmc-paper}.
+CBMC es un verificador de modelos acotados open source\footnote{CBMC. Disponible en \url{https://github.com/diffblue/cbmc}} para programas en C y C++ que soporta C89, C99, C11, C17 
+y gran parte de las extensiones de compilador provistas por gcc, clang y Visual Studio.
+Este forma parte de la familia de herramientas CPROVER destinadas al análisis y verificación automática de software \cite{cbmc-paper}.
 Fue desarrollada originalmente en el ámbito académico, específicamente en Carnegie Mellon University por Edmund Clarke, Daniel Kroening y Flavio Lerda; 
 y presentada por primera vez en la conferencia TACAS 2004, con el título “A Tool for Checking ANSI-C Programs,” publicado bajo la editorial Springer \cite{tacas-2004}.
 Desde entonces, tiene una evolución activa y actualmente es mantenida por D. Kroening quien trabaja en colaboración con la Universidad de Oxford \cite{cbmc-paper}.
 
-Es un verificador de modelos acotados open source\footnote{CBMC. Disponible en \url{https://github.com/diffblue/cbmc}} para programas en C y C++ que soporta C89, C99, C11, C17 
-y gran parte de las extensiones de compilador provistas por gcc, clang y Visual Studio.
 Esta herramienta verifica la seguridad de la memoria (como límites de arreglos y buen uso de punteros), varias variantes de comportamiento indefinido y aserciones
 especificadas por el usuario.
 Más aún, puede corroborar equivalencia de entrada y salida de un programa respecto a otros lenguajes como Verilog \cite{cbmc-website}.
@@ -105,7 +107,7 @@ Dado que CBMC está acotado a C y C++, existen variantes para soportar otros tip
 lenguajes de especificación de hardware.
 La motivación detrás de una herramienta que funcione en un lenguaje como C o C++, se basa en el hecho de que muchos de los \textit{safety-critical software} están escritos
 en lenguajes de bajo nivel, a veces por cuestiones de mejor desempeño.
-A diferencia de la verificación de código de alto nivel, la de bajo nivel puede ser mas compleja por el uso de punteros u operaciones \textit{bit-wise}, por ejemplo \cite{tacas-2004}.
+A diferencia de la verificación de código de alto nivel, la de bajo nivel puede ser más compleja por el uso de punteros u operaciones \textit{bit-wise}, por ejemplo \cite{tacas-2004}.
 Se destacan dos objetivos o criterios principales para la creación de la herramienta: garantía de calidad, refiriéndose no a la “correctitud total” 
 sino a la ausencia de fallas especificas; y la automatización, no solo para proveer de simpleza para verificar un programa sino también para ajustar o asegurar 
 la verificación en entornos donde se requiere de entrega rápida de software \cite{tacas-2004}.
@@ -120,8 +122,6 @@ La sintaxis del comando general para utilizar CBMC es:
 $ cbmc [options ...] [file.c ...]
 \end{verbatim}
 
-Existen también opciones relacionadas a aspectos más técnicos de CBMC, como por ejemplo \verb|--unwind| y \verb|--unwindset| que establecen configuraciones 
-para el tratamiento de bucles presentes en el código.
 Entre las opciones más relevantes de opciones se encuentra \verb|--help| para mostrar la lista completa de comandos, y \verb|--function f_name|, que permite definir
 manualmente la función de entrada para el análisis (en lugar de utilizar una función main por defecto).
 Esto es muy útil cuando estamos trabajando con módulos individuales o cuando queremos hacer verificaciones de manera parcial sobre un conjunto de módulos.
@@ -131,17 +131,18 @@ Se usa \verb|--trace| para observar las trazas de ejecución generadas ante viol
 y \verb|--dimacs| para imprimir la fórmula CNF que se pasa al SAT Solver.
 
 Sumado a lo anterior, también permite ajustar las propiedades específicas a verificar.
-Para ignorar la verificación de errores como desbordamientos de arreglos, divisiones por cero o desreferencias, están las opciones \verb|--no-bounds-check|, 
+Para ignorar la verificación de errores tales como buffer overflows, divisiones por cero o desreferencias, están las opciones \verb|--no-bounds-check|, 
 \verb|--no-div-by-zero-check|, \verb|--no-pointer-check| respectivamente.
 Para ignorar aserciones presentes en el código se usa \verb|--no-assertions-|.
-En cuanto aspectos más técnicos, se encuentran además \verb|--unwind| y \verb|--unwindset| para establecer configuraciones para el tratamiento de bucles presentes en el código. \cite{cbmc-manual}
+En cuanto aspectos más técnicos, se encuentran además \verb|--unwind| y \verb|--unwindset| para establecer configuraciones para el tratamiento de bucles 
+presentes en el código, como la elección de la cota para el desenrollo a realizar. \cite{cbmc-manual}
 
 Además de poder ajustar las propiedades por defecto, una característica importante de la herramienta es la elección de propiedades a verificar.
 Por un lado, puede verificarse la existencia de problemas comunes como index out of bounds, buffer overflows, memory leaks \cite{cbmc-paper}, y por otro lado,
 el usuario puede definir dentro del código propiedades específicas que desea que se verifiquen.
 Éstas las llamamos aserciones (en C, generalmente se usa el macro \verb|assert(condition)|).
-A diferencia de este, CBMC puede verificar aserciones definidas por el usuario de manera estática, verificándola para cualquier dirección posible en la ejecución.
-Para diferenciarlo del tradicional, se implementa \verb|__CPROVER_assert(condition, error_message)|.
+Otra manera de definir aserciones con mensajes específicos de error es usando \verb|__CPROVER_assert(condition, error_message)|.
+Notar que en ambos casos CBMC verifica las aserciones para cualquier dirección posible en la ejecución.
 Asimismo, permite acotar el análisis simbólico mediante el uso de \verb|__CPROVER_assume(condition)|, que restringe el espacio de búsqueda a aquellos caminos 
 en los que se cumpla la condición indicada.
 Este último resulta útil para modelar precondiciones o reducir el dominio de los valores no determinísticos que puede tomar una variable \cite{cbmc-paper}.
@@ -149,12 +150,6 @@ Este último resulta útil para modelar precondiciones o reducir el dominio de l
 %
 \section{Funcionamiento Interno y Aspectos Técnicos}
 Para explicar el proceso, consideraremos el ejemplo de la figura \ref{fig: code-conversion}.
-Como primer paso se transforma el programa en un grafo de control de flujo (CFG) \footnote{Se obtiene luego de las etapas de scanning y parsing usando la 
-gramática de C/C++ y desambiguando las expresiones (igual al funcionamiento inicial de un intérprete o compilador).}, la cual es una representación de 
-todos los caminos que pueden ser atravesados por un programa durante su ejecución \cite{cbmc-slides}.
-Luego, para corroborar las aserciones o propiedades (como respetar límites de un arreglo), se siguen los caminos del CFG hacia una aserción y luego se construye 
-la fórmula correspondiente \cite{cbmc-slides}.
-
 \begin{figure}[!htb]
   \centering
   \includegraphics[width=0.75\textwidth]{code-conversion.jpg}
@@ -162,11 +157,33 @@ la fórmula correspondiente \cite{cbmc-slides}.
   \label{fig: code-conversion}
 \end{figure}
 
+\begin{wrapfigure}{r}{0.35\textwidth}
+  \vspace{-15pt}
+  \centering
+  \includegraphics[width=0.35\textwidth]{cfg-generation.jpeg}
+  \caption{Generación de la CFG}
+  \label{fig: cfg-generation}
+  \vspace{-15pt}
+\end{wrapfigure}
+Como primer paso se transforma el programa en un grafo de control de flujo (CFG) \footnote{Se obtiene luego de las etapas de scanning y parsing usando la 
+gramática de C/C++ y desambiguando las expresiones (igual al funcionamiento inicial de un intérprete o compilador).}, la cual es una representación de 
+todos los caminos que pueden ser atravesados por un programa durante su ejecución \cite{cbmc-slides}. En nuestro caso ejemplo se obtendría el grafo de la figura \ref{fig: cfg-generation}.
+Luego, para corroborar las aserciones o propiedades (como respetar límites de un arreglo), se siguen los caminos del CFG hacia una aserción y luego se construye 
+la fórmula correspondiente \cite{cbmc-slides}.
+
 Dado un camino, los ciclos, si los hay, son desenrollados duplicando el cuerpo $n$ veces (para $n$ fijo).
 Cada copia tiene un condicional que usa la misma condición que el ciclo por si requiere menos de $n$ iteraciones.
 Luego de la última copia, se agrega una aserción que asegura que el programa nunca requiere más iteraciones.
 Esta aserción usa la negación de la condición del ciclo (la llamamos aserción desenrollada) y nos permite saber si la cota es suficientemente larga para cubrir todos los ciclos.
+Un ejemplo del desenrollo realizado puede verse en la figura \ref{fig: loop-unwinding}.
 Respecto a los goto y llamadas a funciones, estos se desenrollan de una forma similar \cite{tacas-2004}.
+
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.8\textwidth]{loop-unwinding.jpeg}
+  \caption{Ejemplo del desenrollo de loops realizado}
+  \label{fig: loop-unwinding}
+\end{figure}
 
 Posteriormente, este programa es transformado en una forma SSA (static single-assignment) de modo que cada variable sea asignada exactamente una vez, y para que 
 los punteros se simulen como estados abstractos en función de las asignaciones que se le realicen (son tratados como funciones no interpretadas).
@@ -201,7 +218,7 @@ sino que directamente se detallará la solución sobre la versión ya simplifica
 La versión completa junto con los archivos tanto del reto como de la solución se encuentra en el repositorio de este informe
 \footnote{CBMC Analysis Report. Disponible en \url{https://github.com/helcsnewsxd/cbmc-analysis-report}}.
 
-En la versión simplificada, el objetivo es quebrar un cifrado obteniendo el mensaje original que corresponde con el mensaje encriptado interceptado
+En la versión simplificada, el objetivo es quebrar un cifrado obteniendo el mensaje original que corresponde con el mensaje encriptado interceptado (que de ahora en más llamaremos flag)
 de longitud $76$ (en formato hexadecimal):
 \begin{verbatim}
             57657535570c1e1c612b3468106a18492140662d2f5-
@@ -218,8 +235,8 @@ a la mitad del mensaje interceptado: $38$), la clave (de longitud desconocida) y
 En este modelo se hace uso de la búsqueda de trazas de error generada por CBMC al colocar como aserción final que la bandera encriptada en el cifrado es distinta a la interceptada.
 De este modo, esta traza muestra los estados correspondientes al par \texttt{(flag, key)} que generan el mismo valor interceptado.
 
-Para reducir la búsqueda de posibles entradas que hagan fallar la aserción, se utiliza también la funcionalidad de contratos en código que CPROVER dispone en la herramienta CBMC.
-En este caso particular, se hace uso de \verb|__CPROVER_assume()| para asegurar propiedades que tanto el mensaje original como la clave privada deben cumplir.
+Para reducir la búsqueda de posibles entradas que hagan fallar la aserción, se hace uso de \verb|__CPROVER_assume()|.
+Esto permite asegurar propiedades que tanto el mensaje original como la clave privada deben cumplir.
 En particular, algunas de estas condiciones implican que ambas contienen solo caracteres imprimibles y que el formato de la bandera es \verb|picoCTF{...}|.
 
 Finalmente, y debido a que el análisis devuelve una sola traza de error, para hacer más eficiente la búsqueda se desarrolló un script que ejecute el análisis por 
@@ -240,13 +257,13 @@ entre sí tienen diversas mejoras que hacen que uno sea mejor que otro.
 Comenzando por el testing tradicional, el mismo brinda una forma más accesible de testeo para desarrolladores (a veces los verificadores 
 formales pueden parecer complejos si uno no tiene conocimiento en lógica formal).
 También, permiten testear características específicas de nuestro programa manualmente.
-En contraste, el testing tradicional no puede garantizar ausencia de errores (pero si la presencia).
+En contraste, el testing tradicional no puede garantizar ausencia de errores (pero sí la presencia).
 Además, debido a la falta de estandarización para C, la generación de tests automáticos es muy difícil de llevar a cabo \cite{cbmc-comparison}, 
 por lo que no son fácilmente escalables para programas complejos.
 Por ambos motivos, aquí CBMC se posiciona como una mejor opción al poder garantizar ausencia de errores (respecto a una cota/límite) y debido a que es escalable a programas complejos.
 
 Respecto a la comparación de CBMC con otros verificadores formales, se destacan que herramientas como CPA-Seq y ESBMC-incr tienen ventajas ante esta.
-CPA-Seq combina técnicas más avanzadas que le permiten ser mucho mas profundo y rápido a la hora de explorar los caminos posibles de un programa.
+CPA-Seq combina técnicas más avanzadas que le permiten ser mucho más profundo y rápido a la hora de explorar los caminos posibles de un programa.
 Según la experimentación realizada en los estudios de D. Beyer y T. Lemberger, CPA-Seq encuentra un $59.66\%$ de errores mientras que CBMC un $55.7\%$. \cite{cbmc-comparison}
 
 El otro verificador es ESBMC-incr, una variación de CBMC con algunas mejoras.
@@ -254,26 +271,49 @@ Entre ellas, aplica una variación del bounded model checking en el que se basa 
 En comparación con CBMC y CPA-Seq, ESBMC-incr encuentra $63.69\%$ de errores \cite{cbmc-comparison}, consolidándose como la mejor.
 
 %
+\section{Limitaciones Encontradas}
+En el análisis de CBMC realizado, se pudieron evidenciar limitaciones de la herramienta.
+Algunas de estas son inherentes a la técnica de Bounded Model Checking que utiliza, como por ejemplo la necesidad de definir una cota fija para el análisis y 
+con ello la posibilidad de no encontrar errores o tener falsos positivos si no se hace una elección adecuada.
+Además, esto le imposibilita realizar análisis exhaustivos en programas con loops infinitos o con estructuras de datos dinámicas complejas, ya que 
+la cota elegida puede no ser suficiente para cubrir todos los caminos posibles. O, si esta es demasiado alta, puede llevar a un tiempo y consumo de 
+CPU y memoria excesivos, lo que la hace inviable para sistemas grandes o complejos.
+
+Una limitante adicional de CBMC es la compatibilidad reducida con C++ 17 y versiones posteriores, lo que puede dificultar su uso en proyectos modernos que utilizan
+características avanzadas y específicas del lenguaje. En nuestro caso de uso, por ejemplo, durante el desarrollo del modelo tuvimos inconvenientes respecto a la 
+compatibilidad de la herramienta con variables de tipo \verb|std::string| y pasar las mismas como parámetros a funciones. Finalmente, se optó por usar arreglos de 
+caracteres sin signo (\verb|unsigned char[]|) para evitar estos problemas.
+
+Por otro lado, en estudios sobre verificación de equivalencia entre programas, se han identificado limitaciones al comprobar que dos versiones de una 
+función se comportan de manera equivalente cuando estas reciben punteros como argumentos.
+Esta dificultad se debe a la complejidad inherente del análisis simbólico de punteros, especialmente en escenarios con aliasing, aritmética de punteros o 
+accesos indirectos a memoria \cite{aes-equivalence-bmc}.
+Además, en otros estudios se ha observado que CBMC tiene un bajo rendimiento en la verificación de problemas relacionados con arreglos y vectores de bits \cite{cbmc-comparison}.
+
+%
 \section{Conclusión}
 En este informe presentamos un análisis general de CBMC.
-Abordamos su funcionamiento interno, su usabilidad desde la línea de comandos, sus aplicaciones en distintos dominios y su desempeño en comparación con otras herramientas.
+Abordamos su funcionamiento interno, su usabilidad desde la línea de comandos, sus aplicaciones en distintos dominios, su desempeño en comparación con otras herramientas y algunas de sus limitaciones.
 Además, incluimos un caso de estudio en criptografía para evidenciar su versatilidad.
 
-Su enfoque basado en Bounded Model Checking y las transformaciones que aplica para traducir código a su representación lógica para luego aplicar SAT/SMT solvers, la convierte
+Su enfoque basado en Bounded Model Checking (BMC) y las transformaciones que aplica para traducir código a su representación lógica para luego aplicar SAT/SMT solvers, la convierte
 en una herramienta eficaz para la detección de errores comunes.
 Además, no solo permite verificar propiedades estándares de seguridad, sino también que el usuario pueda definir aserciones personalizadas que considere
 relevantes para el software específico que se esté analizando, lo cual amplía significativamente su aplicación.
 
 Cabe destacar también su facilidad de uso desde la línea de comandos: las flags son directas y permiten configurar rápidamente distintos modos de análisis.
-No es necesario descargar herramientas extras para su uso, y viene instalado por defecto en Linux, por lo que es fácil de acceder a la misma (en caso de Windows o MacOS, 
-su instalación es muy simple).
+No es necesario descargar herramientas extras para su uso, y viene instalado por defecto en algunas distribuciones de Linux (Ubuntu y Debian), por lo que es
+fácil de acceder a la misma (en caso de Windows o MacOS, su instalación es muy simple).
 
 Más allá de su uso tradicional en la verificación formal de software, CBMC ha demostrado ser útil en una variedad de dominios, desde la verificación de controladores en
 sistemas embebidos hasta aplicaciones de criptografía o biología.
 Esto queda evidenciado en el caso de estudio presentado en este informe.
 
+Sin embargo, es importante tener en cuenta sus limitaciones, como la necesidad de definir una cota fija para el análisis y su compatibilidad reducida con versiones recientes de C++.
+Estas limitaciones pueden afectar su aplicabilidad en ciertos contextos, especialmente en sistemas complejos o modernos que utilizan características avanzadas del lenguaje.
+
 En conclusión, CBMC no solo destaca por su eficiencia, si no también por su flexibilidad y lo accesible que es, lo que la convierte en una valiosa opción tanto para
-proyectos de la academia como para industria.
+proyectos de la academia como para algunos de la industria.
 
 \bibliographystyle{splncs04}
 \bibliography{references}
